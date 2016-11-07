@@ -1,8 +1,8 @@
 //
-//  ReposTableViewController.swift
-//  github-repo-starring-swift
+//  FISReposTableViewController.swift
+//  github-repo-list-swift
 //
-//  Created by Haaris Muneer on 6/28/16.
+//  Created by  susan lovaglio on 10/23/16.
 //  Copyright © 2016 Flatiron School. All rights reserved.
 //
 
@@ -10,35 +10,62 @@ import UIKit
 
 class ReposTableViewController: UITableViewController {
     
-    let store = ReposDataStore.sharedInstance
+    var store = ReposDataStore.sharedInstance
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
         self.tableView.accessibilityLabel = "tableView"
-        self.tableView.accessibilityIdentifier = "tableView"
         
-        store.getRepositories {
-            OperationQueue.main.addOperation({ 
-                self.tableView.reloadData()
-            })
+        store.getRepositories { (success) in
+            if success {
+                DispatchQueue.main.async { self.tableView.reloadData() }
+            }
         }
     }
-
-    // MARK: - Table view data source
+    
+//    override func viewWillAppear(_ animated: Bool) {
+//        super.viewWillAppear(animated)
+//        
+//        store.getRepositories { success in
+//            
+//            if success {
+//                print ("Yay")
+//                DispatchQueue.main.async {
+//                    self.tableView.reloadData()
+//                }
+//            }
+//        }
+//    }
 
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return self.store.repositories.count
+        return store.repositories.count
     }
-
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "repoCell", for: indexPath)
-
-        let repository:GithubRepository = self.store.repositories[(indexPath as NSIndexPath).row]
-        cell.textLabel?.text = repository.fullName
-
+        let repo = store.repositories[indexPath.row]
+        
+        cell.textLabel?.text = repo.fullName
+        
         return cell
     }
-
+    
+    override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        let repo = store.repositories[indexPath.row]
+        
+        store.toggleStarStatus(for: repo) { (justStarred) in
+            let alertController = UIAlertController(title: "GitHub", message: nil, preferredStyle: .alert)
+            
+            if justStarred {
+                alertController.message = "You just starred \(repo.fullName)"
+            } else {
+                alertController.message = "You just unstarred \(repo.fullName)"
+            }
+            
+            let okAction = UIAlertAction(title: "OK", style: .default, handler: nil)
+            alertController.addAction(okAction)
+            
+            self.present(alertController, animated: true, completion: nil)
+        }
+    }
 }

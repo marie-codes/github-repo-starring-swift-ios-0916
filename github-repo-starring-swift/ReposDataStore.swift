@@ -1,31 +1,48 @@
 //
-//  ReposDataStore.swift
-//  github-repo-starring-swift
+//  FISReposDataStore.swift
+//  github-repo-list-swift
 //
-//  Created by Haaris Muneer on 6/28/16.
+//  Created by  susan lovaglio on 10/23/16.
 //  Copyright © 2016 Flatiron School. All rights reserved.
 //
 
 import UIKit
 
 class ReposDataStore {
-    
     static let sharedInstance = ReposDataStore()
-    fileprivate init() {}
     
-    var repositories:[GithubRepository] = []
+    var repositories: [GithubRepository] = []
     
-    func getRepositories(with completion: @escaping () -> ()) {
-        GithubAPIClient.getRepositories { (reposArray) in
-            self.repositories.removeAll()
-            for dictionary in reposArray {
-                guard let repoDictionary = dictionary as? [String : Any] else { fatalError("Object in reposArray is of non-dictionary type") }
-                let repository = GithubRepository(dictionary: repoDictionary)
-                self.repositories.append(repository)
-                
+    func getRepositories(handler: @escaping (Bool) -> Void) {
+        repositories.removeAll()
+        GithubAPIClient.getRepositories { repos in
+            
+            for dictionary in repos {
+                let newRepo = GithubRepository(dictionary: dictionary)
+                self.repositories.append(newRepo)
             }
-            completion()
+            if self.repositories.isEmpty {
+                handler(false)
+            } else {
+                handler(true)
+            }
         }
     }
-
+    
+    func toggleStarStatus(for repo: GithubRepository, completion: @escaping (Bool) -> Void) {
+        let fullName = repo.fullName
+        
+        GithubAPIClient.checkIfRepositoryIsStarred(fullName) { (starred) in
+            if starred {
+                GithubAPIClient.unstarRepository(named: fullName) {
+                    completion(false)
+                }
+            } else {
+                GithubAPIClient.starRepository(named: fullName) {
+                    completion(true)
+                }
+            }
+        }
+        
+    }
 }
